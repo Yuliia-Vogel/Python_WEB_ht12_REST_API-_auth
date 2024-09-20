@@ -2,6 +2,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from fastapi_jwt_auth import AuthJWT
+# from fastapi_jwt_auth.exceptions import AuthJWTException
 
 from app.schemas import UserCreate, UserRead, UserLogin
 from app.repository.contact_model import User

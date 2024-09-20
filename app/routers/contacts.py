@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Path, Depends, Query, HTTPException, status
+from fastapi import APIRouter, HTTPException, Path, Depends, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi_jwt_auth import AuthJWT
 
-from ..schemas import ResponseContact, ContactBase, ContactUpdate
+from ..schemas import ResponseContact, ContactBase, ContactUpdate, ContactCreate, ContactRead
 from ..dependencies import get_token_header
 from ..database import get_db
 from ..repository.contact_model import Contact, User
@@ -38,7 +38,8 @@ async def get_contacts(db: Session = Depends(get_db),
  
 
 @router.post("/", response_model=ResponseContact) # для створення контакту (лише через Swagger чи Postman)
-async def create_contact(contact: ContactBase, db: Session = Depends(get_db)):
+# async def create_contact(contact: ContactBase, db: Session = Depends(get_db)):
+async def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
     new_contact = contact_repo.create_contact(db, contact)
     return new_contact
 
@@ -72,9 +73,13 @@ async def update_contact(
     
     return contact
 
-# Обмеження доступу до контактів:
-@router.post("/", response_model=ContactRead, status_code=status.HTTP_201_CREATED)
-async def create_contact(contact_data: ContactCreate, db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
+# Обмеження доступу до контактів (з авторизацією)
+@router.post("/with_auth", response_model=ContactRead, status_code=status.HTTP_201_CREATED)
+async def create_contact_with_auth(
+    contact_data: ContactCreate, 
+    db: Session = Depends(get_db), 
+    Authorize: AuthJWT = Depends()
+):
     Authorize.jwt_required()
 
     current_user_email = Authorize.get_jwt_subject()
