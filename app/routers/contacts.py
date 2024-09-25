@@ -37,11 +37,10 @@ async def get_contacts(db: Session = Depends(get_db),
     return contacts
  
 
-@router.post("/", response_model=ResponseContact) # для створення контакту (лише через Swagger чи Postman)
-# async def create_contact(contact: ContactBase, db: Session = Depends(get_db)):
-async def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
-    new_contact = contact_repo.create_contact(db, contact)
-    return new_contact
+# @router.post("/", response_model=ResponseContact) # для створення контакту 
+# async def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
+#     new_contact = contact_repo.create_contact(db, contact)
+#     return new_contact
 
 
 @router.delete("/{contact_id}") # для видалення контакту (лише через Swagger чи Postman)
@@ -73,9 +72,10 @@ async def update_contact(
     
     return contact
 
-# Обмеження доступу до контактів (з авторизацією)
-@router.post("/with_auth", response_model=ContactRead, status_code=status.HTTP_201_CREATED)
-async def create_contact_with_auth(
+
+# Створити новий контакт (лише через Swagger чи Postman) - доступно лише авториз. користувачеві
+@router.post("/create_contact", response_model=ContactRead, status_code=status.HTTP_201_CREATED)
+async def create_contact(
     contact_data: ContactCreate, 
     db: Session = Depends(get_db), 
     Authorize: AuthJWT = Depends()

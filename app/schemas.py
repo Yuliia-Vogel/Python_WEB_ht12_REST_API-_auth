@@ -1,12 +1,12 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 from datetime import date
+
 
 # Contact базова модель
 class ContactBase(BaseModel):
     first_name: str
     last_name: str
-    # email: str
     email: EmailStr
     phone: str
     birthday: date
@@ -15,30 +15,19 @@ class ContactBase(BaseModel):
 
 # Для створення нового контакту
 class ContactCreate(ContactBase):
-    first_name: str
-    last_name: str
-    # email: str
-    email: EmailStr
-    phone: str
-    birthday: date
-    additional_info: Optional[str] = None
-
-    # @validator('first_name', 'last_name')
-    # def name_must_not_be_empty(cls, v):
-    #     if not v:
-    #         raise ValueError('Name fields must not be empty')
-    #     return v
-
-    # @validator('phone')
-    # def phone_must_be_valid(cls, v):
-    #     if not v.isdigit():
-    #         raise ValueError('Phone number must contain only digits')
-    #     return v
+    pass # не потрібно знову всі поля прописувати, бо вони вже спадкуються від ContactBase
+    # first_name: str
+    # last_name: str
+    # email: EmailStr
+    # phone: str
+    # birthday: date
+    # additional_info: Optional[str] = None
 
 
 # Для відображення даних контакту
 class ResponseContact(ContactBase):
     id: int
+    owner_id: int  # Додаємо поле owner_id для відображення ID власника
 
     class Config:
         orm_mode = True
@@ -48,7 +37,6 @@ class ResponseContact(ContactBase):
 class ContactUpdate(BaseModel): # для оновлення контакту.
     first_name: Optional[str] # всі поля optional - щоб можна було оновити вибіркові поля
     last_name: Optional[str]
-    # email: Optional[str]
     email: Optional[EmailStr]
     phone: Optional[str]
     birthday: Optional[date]
@@ -68,19 +56,28 @@ class ContactRead(ResponseContact):
 
 # Додаю схеми для реєстрації і авторизації користувачів
 class UserCreate(BaseModel):
-    # email: str
     email: EmailStr
     password: str
 
+
+# Схема для відображення користувача
 class UserRead(BaseModel):
     id: int
-    # email: str
     email: EmailStr
+    is_active: bool  # Додаємо поле is_active, оскільки воно є у моделі User
 
     class Config:
         orm_mode = True
 
+
 class UserLogin(BaseModel):
-    # email: str
     email: EmailStr
     password: str
+
+
+# Схема для відображення користувача з прив'язаними контактами
+class UserWithContacts(UserRead):
+    contacts: List[ResponseContact] = []  # Додаємо список контактів користувача
+
+    class Config:
+        orm_mode = True

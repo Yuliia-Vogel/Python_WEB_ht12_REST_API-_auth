@@ -14,12 +14,18 @@ postgres_db_name = os.getenv("POSTGRESQL_DB_NAME")
 POSTGRES_DATABASE_URL = f"postgresql://{postgres_name}:{postgres_password}@localhost/{postgres_db_name}"
 # SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db" # жля перевірки, чи все ок з підключенням до бази постгрес
 
-engine = create_engine(POSTGRES_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Перевірка наявності даних для підключення
+if not all([postgres_name, postgres_password, postgres_db_name]):
+    raise ValueError("Потрібно задати всі змінні середовища для підключення до бази даних.")
 
-Base = declarative_base()
+engine = create_engine(POSTGRES_DATABASE_URL) # створюю енджін
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) # створюю сесію
 
-def get_db(): # піде в dependency
+Base = declarative_base() # базовий клас для можделей
+
+
+# Функція для отримання сесії бази даних (піде в dependency)
+def get_db():
     db = SessionLocal()
     try:
         yield db
