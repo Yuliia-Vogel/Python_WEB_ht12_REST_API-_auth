@@ -3,13 +3,15 @@ RESTful API with registration, authorization and authentification.
 
 1. Create and activate venv
 2. pip install poetry
-3. pip install passlib==1.7.4 bcrypt==3.2.0 
-4. poetry install --no-root
+3. poetry install --no-root
+4. pip install passlib==1.7.4 bcrypt==3.2.0 
 5. uvicorn app.main:app --reload
 6. auth/signup
 7. auth/login -> copy token
-8. POST. Create Contact -> fill in information about contact -> execute.
-9. Edit (PUT), Delete -> only owner can perform.
+8. "Authorize" button at the right top corner of page -> paste token -> Authorize -> Close
+9. POST. Create Contact -> fill in information about contact -> execute.
+10. Edit (PUT), Delete - only owner can perform.
+11. To stop application - CTRL+C 
 
 
 

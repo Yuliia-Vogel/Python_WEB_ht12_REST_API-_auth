@@ -39,42 +39,86 @@ async def get_contacts(db: Session = Depends(get_db),
     email: str | None = Query(None)):
     contacts = contact_repo.get_contacts(db, first_name, last_name, email)
     return contacts
- 
-
-# @router.post("/", response_model=ResponseContact) # для створення контакту 
-# async def create_contact(contact: ContactCreate, db: Session = Depends(get_db)):
-#     new_contact = contact_repo.create_contact(db, contact)
-#     return new_contact
 
 
-@router.delete("/{contact_id}") # для видалення контакту (лише через Swagger чи Postman)
-async def delete_contact(contact_id: int, db: Session = Depends(get_db)):
-    contact_repo.delete_contact(db, contact_id)
-    return {"status": "deleted"}
+@router.delete("/{contact_id}") # для видалення контакту (лише через Swagger чи Postman) - доступно лише авториз. користувачеві
+async def delete_contact(
+    contact_id: int, 
+    db: Session = Depends(get_db),
+    Authorize: AuthJWT = Depends()
+):
+    try:
+        Authorize.jwt_required()
+
+        current_user_email = Authorize.get_jwt_subject()
+        logging.info(f"Trying to authenticate user: {current_user_email}")
+
+        user = db.query(User).filter(User.email == current_user_email).first()
+        logging.info(f"User query result: {user}")
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        
+        contact = contact_repo.get_one_contact(db, contact_id)
+
+        if contact is None:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        # Перевіряємо, чи є користувач власником контакту
+        if contact.owner_id != user.id:
+            raise HTTPException(status_code=403, detail="You do not have permission to delete this contact")
+        
+        logging.info(f"User ID: {user.id}")
+        contact_repo.delete_contact(db, contact_id)
+        return {"status": "deleted"}
+    except Exception as e:
+        logging.error(f"Error in edit contact {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
-@router.put("/{contact_id}", response_model=ContactUpdate) # для оновлення даних контакту (лише через Swagger чи Postman)
+@router.put("/{contact_id}", response_model=ContactUpdate) # для оновлення даних контакту (лише через Swagger чи Postman) - доступно лише авториз. користувачеві
 async def update_contact(
     contact_id: int,
     updated_contact: ContactUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db), 
+    Authorize: AuthJWT = Depends()
 ):
-    contact = contact_repo.get_contact_by_id(db, contact_id)
-    
-    if contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
+    try:
+        Authorize.jwt_required()
 
-    contact.first_name = updated_contact.first_name
-    contact.last_name = updated_contact.last_name
-    contact.email = updated_contact.email
-    contact.phone = updated_contact.phone
-    contact.birthday = updated_contact.birthday
-    contact.additional_info = updated_contact.additional_info
+        current_user_email = Authorize.get_jwt_subject()
+        logging.info(f"Trying to authenticate user: {current_user_email}")
 
-    db.commit()
-    db.refresh(contact)
+        user = db.query(User).filter(User.email == current_user_email).first()
+        logging.info(f"User query result: {user}")
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+        logging.info(f"User ID: {user.id}")
+
+        contact = contact_repo.get_contact_by_id(db, contact_id)
     
-    return contact
+        if contact is None:
+            raise HTTPException(status_code=404, detail="Contact not found")
+        # Перевіряємо, чи є користувач власником контакту
+        if contact.owner_id != user.id:
+            raise HTTPException(status_code=403, detail="You do not have permission to update this contact")
+        
+        contact.first_name = updated_contact.first_name
+        contact.last_name = updated_contact.last_name
+        contact.email = updated_contact.email
+        contact.phone = updated_contact.phone
+        contact.birthday = updated_contact.birthday
+        contact.additional_info = updated_contact.additional_info
+
+        db.commit()
+        db.refresh(contact)
+        
+        return contact
+    except Exception as e:
+        logging.error(f"Error in edit contact {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 # Створити новий контакт (лише через Swagger чи Postman) - доступно лише авториз. користувачеві
@@ -92,7 +136,6 @@ async def create_contact(
 
         user = db.query(User).filter(User.email == current_user_email).first()
         logging.info(f"User query result: {user}")
-
 
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
