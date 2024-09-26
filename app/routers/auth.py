@@ -38,4 +38,4 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db), Authorize: 
     access_token = Authorize.create_access_token(subject=user.email)
     refresh_token = Authorize.create_refresh_token(subject=user.email)
 
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}

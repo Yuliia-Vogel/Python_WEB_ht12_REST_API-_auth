@@ -8,7 +8,8 @@ RESTful API with registration, authorization and authentification.
 5. uvicorn app.main:app --reload
 6. auth/signup
 7. auth/login -> copy token
-8. POST -> Create Contact (тут зараз проблема - немає в сваггері поля, куди вставляти токен -> вирішую)
+8. POST. Create Contact -> fill in information about contact -> execute.
+9. Edit (PUT), Delete -> only owner can perform.
 
 
 

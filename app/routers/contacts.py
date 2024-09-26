@@ -1,7 +1,10 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Path, Depends, Query, status
+from fastapi_jwt_auth import AuthJWT
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from fastapi_jwt_auth import AuthJWT
 
 from ..schemas import ResponseContact, ContactBase, ContactUpdate, ContactCreate, ContactRead
 from ..dependencies import get_token_header
@@ -11,6 +14,7 @@ from ..repository import contact_repo
 # from ..schemas import ContactCreate, ContactRead
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
+security = HTTPBearer()
 
 
 @router.get("/birthdays", response_model=list[ResponseContact]) # для пошуку днів народж. у найбл. 7 днів. Цю функцію слід ставити перед ф-цією пошуку контакту за {contact_id}, інакше фаст-апі проводить пошук саме за {contact_id}, а не днем народження
@@ -80,17 +84,31 @@ async def create_contact(
     db: Session = Depends(get_db), 
     Authorize: AuthJWT = Depends()
 ):
-    Authorize.jwt_required()
+    try:
+        Authorize.jwt_required()
 
-    current_user_email = Authorize.get_jwt_subject()
-    user = db.query(User).filter(User.email == current_user_email).first()
+        current_user_email = Authorize.get_jwt_subject()
+        logging.info(f"Trying to authenticate user: {current_user_email}")
 
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        user = db.query(User).filter(User.email == current_user_email).first()
+        logging.info(f"User query result: {user}")
 
-    new_contact = Contact(**contact_data.dict(), owner_id=user.id)
-    db.add(new_contact)
-    db.commit()
-    db.refresh(new_contact)
 
-    return new_contact
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+        logging.info(f"User ID: {user.id}")
+
+        new_contact = Contact(**contact_data.dict(), owner_id=user.id)
+        logging.info(f"New contact: {new_contact}")
+
+        db.add(new_contact)
+        logging.info(f"Contact added to database")
+        
+        db.commit()
+        db.refresh(new_contact)
+
+        return new_contact
+    except Exception as e:
+        logging.error(f"Error in create_contact: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
